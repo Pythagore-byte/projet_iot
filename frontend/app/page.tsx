@@ -1,5 +1,5 @@
-import { Widget } from "./components/widget"
-import { Thermometer, Sun, Droplet } from "lucide-react"
+import { Widget } from "@/components/widget";
+import { Thermometer, Sun, Droplet } from "lucide-react";
 
 export default function Home() {
   return (
@@ -33,6 +33,5 @@ export default function Home() {
       </Widget>
       {/* Add more widgets as needed */}
     </div>
-  )
+  );
 }
-

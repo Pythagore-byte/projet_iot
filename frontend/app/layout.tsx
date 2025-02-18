@@ -1,20 +1,20 @@
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { Sidebar } from "./components/sidebar"
-import { Header } from "./components/header"
-import type React from "react"
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Sidebar } from "@/components/sidebar";
+import { Header } from "@/components/header";
+import type React from "react";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Farm Smart Home Dashboard",
+  title: "TerraTrack",
   description: "Control your smart farm with ease",
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -28,6 +28,5 @@ export default function RootLayout({
         </div>
       </body>
     </html>
-  )
+  );
 }
-
