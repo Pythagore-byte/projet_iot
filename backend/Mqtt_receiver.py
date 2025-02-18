@@ -37,3 +37,5 @@ client.subscribe(topic)
 
 #lancer l'écoute des messages de TTN 
 client.loop_forever()
+
+# Partie 2 : FASTAPI
