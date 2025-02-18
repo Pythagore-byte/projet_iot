@@ -14,7 +14,7 @@ import { useState } from "react";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/" },
-  { icon: Thermometer, label: "Temperature", href: "/temperature" },
+  { icon: Thermometer, label: "Temperature", href: "/temperature-humidity" },
   { icon: Sun, label: "Lighting", href: "/lighting" },
   { icon: Droplet, label: "Irrigation", href: "/irrigation" },
   { icon: Leaf, label: "Crops", href: "/crops" },

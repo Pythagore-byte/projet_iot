@@ -21,8 +21,10 @@ CREATE TABLE Measurements(
 );
 
 CREATE TABLE Errors(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     device REFERENCES Device(id) ON DELETE CASCADE,
-    error VARCHAR(255) NOT NULL
+    error VARCHAR(255) NOT NULL,
+    handled BOOLEAN DEFAULT FALSE
 );
 
 INSERT INTO Type (id, type, unit) VALUES (1, 'Temperature', '°C');
