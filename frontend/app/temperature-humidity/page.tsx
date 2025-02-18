@@ -90,7 +90,7 @@ export default function TemperatureHumidityPage() {
                 id="humidity-gauge"
                 nrOfLevels={20}
                 percent={humidityPercentage}
-                colors={["#7da06c", "#ffc86b", "#ff8e8e"]}
+                colors={["#ff8e8e", "#ffc86b", "#7da06c"]}
                 formatTextValue={() => `${latestHumidity}%`}
                 textColor="#000000"
               />
