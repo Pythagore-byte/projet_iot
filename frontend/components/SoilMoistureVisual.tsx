@@ -109,41 +109,41 @@ export default function SoilMoistureVisual({ depth10, depth20, depth30, historic
     drawSoilLayer(layerHeight, layerHeight, depth20);
     drawSoilLayer(layerHeight * 2, layerHeight, depth30);
 
-    // Draw enhanced root system
-    ctx.strokeStyle = '#2F4F2F';
-    ctx.lineWidth = 1.5;
-    const rootCount = 7;
-    
-    for (let i = 0; i < rootCount; i++) {
-      const x = (ctx.canvas.width / (rootCount - 1)) * i;
-      
-      // Main root
+    // Draw enhanced root system with fractal-like pattern
+    const drawRoot = (startX: number, startY: number, length: number, angle: number, depth: number) => {
+      if (depth <= 0 || length < 2) return;
+
+      const endX = startX + Math.cos(angle) * length;
+      const endY = startY + Math.sin(angle) * length;
+
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      const controlPoint1X = x + Math.random() * 40 - 20;
-      const controlPoint2X = x + Math.random() * 40 - 20;
-      ctx.bezierCurveTo(
-        controlPoint1X, ctx.canvas.height / 3,
-        controlPoint2X, ctx.canvas.height * 2/3,
-        x + Math.random() * 60 - 30, ctx.canvas.height
-      );
+      ctx.moveTo(startX, startY);
+      
+      // Vary line thickness based on depth
+      ctx.lineWidth = Math.max(0.5, depth * 0.5);
+      
+      // Add slight curve to make it more natural
+      const controlX = startX + (Math.cos(angle) * length * 0.5) + (Math.random() * 20 - 10);
+      const controlY = startY + (Math.sin(angle) * length * 0.5) + (Math.random() * 20 - 10);
+      
+      ctx.quadraticCurveTo(controlX, controlY, endX, endY);
       ctx.stroke();
 
-      // Add small root branches
-      for (let j = 0; j < 3; j++) {
-        const startY = (ctx.canvas.height / 3) * j;
-        const endY = startY + 40;
-        
-        ctx.beginPath();
-        ctx.moveTo(x, startY + Math.random() * 50);
-        ctx.quadraticCurveTo(
-          x + (Math.random() > 0.5 ? 20 : -20),
-          (startY + endY) / 2,
-          x + (Math.random() > 0.5 ? 30 : -30),
-          endY
-        );
-        ctx.stroke();
+      // Create branches
+      const branchCount = Math.floor(Math.random() * 3) + 1;
+      for (let i = 0; i < branchCount; i++) {
+        const newLength = length * (0.6 + Math.random() * 0.2);
+        const angleOffset = (Math.random() * 0.5 - 0.25) * Math.PI;
+        drawRoot(endX, endY, newLength, angle + angleOffset, depth - 1);
       }
+    };
+
+    // Draw main roots
+    ctx.strokeStyle = '#2F4F2F';
+    const mainRootCount = 3;
+    for (let i = 0; i < mainRootCount; i++) {
+      const x = ctx.canvas.width * (i + 1) / (mainRootCount + 1);
+      drawRoot(x, 0, ctx.canvas.height / 3, Math.PI / 2, 5);
     }
 
   }, [depth10, depth20, depth30]);

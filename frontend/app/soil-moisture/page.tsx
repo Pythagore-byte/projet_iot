@@ -167,7 +167,6 @@ export default function SoilMoisturePage() {
                     formatter={(value: number) => [`${value}%`, 'Moisture']}
                     contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
                   />
-                  <ReferenceLine y={layer.stats.avg} stroke="#666" strokeDasharray="3 3" label={{ value: 'Average', position: 'left' }} />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
