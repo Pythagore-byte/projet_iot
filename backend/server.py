@@ -53,3 +53,22 @@ async def get_temperatures_humidity():
         elif row["device"] == 2:
             humidity.append(measurement)
     return {"temperature": temperatures, "humidity": humidity}
+
+@app.get("/soil-humidity")
+async def get_soil_humidity():
+    c, conn = connect_db()
+    query = "SELECT device, value, recorded_at FROM Measurements WHERE device IN (4,5,6)"
+    rows = c.execute(query).fetchall()
+    disconnect_db(conn)
+    humidity10 = []
+    humidity20 = []
+    humidity30 = []
+    for row in rows:
+        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        if row["device"] == 4:
+            humidity10.append(measurement)
+        elif row["device"] == 5:
+            humidity20.append(measurement)
+        elif row["device"] == 6:
+            humidity30.append(measurement)
+    return {"humidity10": humidity10, "humidity20": humidity20, "humidity30": humidity30}

@@ -14,10 +14,13 @@ import { useState } from "react";
 
 const navItems = [
   { icon: Home, label: "Dashboard", href: "/" },
-  { icon: Thermometer, label: "Temperature", href: "/temperature-humidity" },
-  { icon: Sun, label: "Lighting", href: "/lighting" },
-  { icon: Droplet, label: "Irrigation", href: "/irrigation" },
-  { icon: Leaf, label: "Crops", href: "/crops" },
+  {
+    icon: Thermometer,
+    label: "Air Temperature & Humidity",
+    href: "/temperature-humidity",
+  },
+  { icon: Droplet, label: "Soil Moisture", href: "/soil-moisture" },
+  { icon: Leaf, label: "Plant Suitability", href: "/plant-suitability" },
   { icon: AlertTriangle, label: "Errors", href: "/errors" },
 ];
 

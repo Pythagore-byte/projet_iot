@@ -90,7 +90,7 @@ export default function TemperatureHumidityPage() {
                 id="humidity-gauge"
                 nrOfLevels={20}
                 percent={humidityPercentage}
-                colors={["#ff8e8e", "#ffc86b", "#7da06c"]}
+                colors={["#7da06c", "#ffc86b", "#ff8e8e"]}
                 formatTextValue={() => `${latestHumidity}%`}
                 textColor="#000000"
               />
@@ -146,7 +146,7 @@ export default function TemperatureHumidityPage() {
                   labelFormatter={(value) => new Date(value).toLocaleString()}
                   formatter={(value: number) => [`${value}%`, 'Humidity']}
                 />
-                <Line type="monotone" dataKey="value" stroke="#7da06c" dot={false} />
+                <Line type="monotone" dataKey="value" stroke="#f0a67d" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -169,8 +169,8 @@ export default function TemperatureHumidityPage() {
           <button
             className={`px-4 py-2 font-semibold ${
               activeTab === 'humidity'
-                ? 'text-[#7da06c] border-b-2 border-[#7da06c]'
-                : 'text-gray-500 hover:text-[#7da06c]'
+                ? 'text-[#f0a67d] border-b-2 border-[#f0a67d]'
+                : 'text-gray-500 hover:text-[#f0a67d]'
             }`}
             onClick={() => setActiveTab('humidity')}
           >
@@ -192,7 +192,7 @@ export default function TemperatureHumidityPage() {
               data={data?.humidity ?? []} 
               unit="%"
               type="Humidity"
-              headerColor="#7da06c"
+              headerColor="#f0a67d"
             />
           )}
         </div>
