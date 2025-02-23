@@ -155,7 +155,7 @@ export default function SoilMoisturePage() {
                     dataKey="recorded_at" 
                     tickFormatter={(value) => {
                       const date = new Date(value);
-                      return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                      return `${date.getDate()}/${date.getMonth() + 1} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
                     }}
                     angle={-45}
                     textAnchor="end"
