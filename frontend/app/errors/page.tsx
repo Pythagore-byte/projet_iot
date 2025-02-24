@@ -8,6 +8,7 @@ interface Error {
   device: string;
   error: string;
   handled: boolean;
+  recorded_at: string;
 }
 
 async function getErrors() {
@@ -100,29 +101,40 @@ export default function ErrorsPage() {
 function ErrorTable({ errors, onToggle }: { errors: Error[], onToggle: (error: Error) => Promise<void> }) {
   return (
     <div className="rounded-md border overflow-x-auto">
-      <table className="w-full min-w-[400px] table-fixed">
+      <table className="w-full min-w-[400px] divide-y divide-gray-200">
         <thead>
-          <tr className="border-b bg-slate-50">
-            <th className="p-3 text-left w-[200px]">Device</th>
-            <th className="p-3 text-left">Error</th>
-            <th className="p-3 text-left w-[180px]">Actions</th>
+          <tr className="bg-slate-50">
+            <th className="p-3 text-left text-sm font-medium text-gray-700 w-[120px] sm:w-[180px]">Device</th>
+            <th className="p-3 text-left text-sm font-medium text-gray-700">Error</th>
+            <th className="p-3 text-left text-sm font-medium text-gray-700 hidden sm:table-cell w-[160px]">Date</th>
+            <th className="p-3 text-left text-sm font-medium text-gray-700 w-[120px] sm:w-[160px]">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-200">
           {errors.map((error) => (
-            <tr key={error.id} className="border-b">
-              <td className="p-3 whitespace-nowrap">{error.device}</td>
-              <td className="p-3 whitespace-pre-wrap break-words">{error.error}</td>
-              <td className="p-3 whitespace-nowrap">
+            <tr key={error.id}>
+              <td className="p-3 text-sm text-gray-900 whitespace-nowrap">{error.device}</td>
+              <td className="p-3 text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div className="flex flex-col">
+                  <span>{error.error}</span>
+                  <span className="text-xs text-gray-500 sm:hidden mt-1">
+                    {new Date(error.recorded_at).toLocaleString()}
+                  </span>
+                </div>
+              </td>
+              <td className="p-3 text-sm text-gray-900 whitespace-nowrap hidden sm:table-cell">
+                {new Date(error.recorded_at).toLocaleString()}
+              </td>
+              <td className="p-3 text-sm whitespace-nowrap">
                 <button 
                   onClick={() => onToggle(error)}
-                  className={`w-full md:w-auto px-3 py-1 rounded-md text-sm font-medium ${
+                  className={`w-full text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-md font-medium transition-colors ${
                     error.handled 
                       ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
                       : 'bg-green-100 text-green-800 hover:bg-green-200'
                   }`}
                 >
-                  {error.handled ? 'Unmark as Resolved' : 'Mark as Resolved'}
+                  {error.handled ? 'Unmark' : 'Resolve'}
                 </button>
               </td>
             </tr>

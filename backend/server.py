@@ -24,18 +24,18 @@ def disconnect_db(conn):
 @app.get("/errors")
 async def get_errors():
     c, conn = connect_db()
-    rows = c.execute("SELECT id, device, error, handled FROM Errors").fetchall()
+    rows = c.execute("SELECT id, device, error, handled, recorded_at FROM Errors").fetchall()
     disconnect_db(conn)
-    return [{"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"])} for row in rows]
+    return [{"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": row["recorded_at"]} for row in rows]
 
 @app.put("/errors/{error_id}/toggle")
 async def toggle_error(error_id: int):
     c, conn = connect_db()
     c.execute("UPDATE Errors SET handled = NOT handled WHERE id = ?", (error_id,))
-    row = c.execute("SELECT id, device, error, handled FROM Errors WHERE id = ?", (error_id,)).fetchone()
+    row = c.execute("SELECT id, device, error, handled, recorded_at FROM Errors WHERE id = ?", (error_id,)).fetchone()
     disconnect_db(conn)
     if row:
-        return {"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"])}
+        return {"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": row["recorded_at"]}
     return {"error": "Error not found"}
 
 @app.get("/temperatures-humidity")
