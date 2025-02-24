@@ -90,9 +90,9 @@ export default function SoilMoisturePage() {
       {/* Visualization Section */}
       <div className="mb-8">
         <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4 sm:gap-6">
             <h2 className="text-lg font-semibold text-[#7da06c]">Clay Soil Profile Analysis</h2>
-            <div className="grid grid-cols-3 gap-6 text-sm">
+            <div className="w-full sm:w-auto grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 text-sm">
               {[
                 { depth: '10cm', stats: stats10cm },
                 { depth: '20cm', stats: stats20cm },
