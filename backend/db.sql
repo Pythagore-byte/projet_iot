@@ -21,13 +21,20 @@ CREATE TABLE Measurements(
 );
 
 CREATE TABLE Errors(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     device REFERENCES Device(id) ON DELETE CASCADE,
-    error VARCHAR(255) NOT NULL
+    error VARCHAR(255) NOT NULL,
+    handled BOOLEAN DEFAULT FALSE
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- INIT 
 INSERT INTO Type (id, type, unit) VALUES (1, 'Temperature', '°C');
 INSERT INTO Type (id, type, unit) VALUES (2, 'Humidity', '%');
 INSERT INTO Type (id, type, unit) VALUES (3, 'Luminosity', 'Lux');
+INSERT INTO Type (id, type, unit) VALUES (4, 'Humidity10', '%');
+INSERT INTO Type (id, type, unit) VALUES (5, 'Humidity20', '%');
+INSERT INTO Type (id, type, unit) VALUES (6, 'Humidity30', '%');
 
 INSERT INTO Device (id, type) VALUES (1, 1);
 INSERT INTO Device (id, type) VALUES (2, 1);
@@ -42,4 +49,3 @@ INSERT INTO Errors (device, error) VALUES (3, 'Error 3');
 INSERT INTO Errors (device, error) VALUES (3, 'Error 4');
 INSERT INTO Errors (device, error) VALUES (3, 'Error 5');
 INSERT INTO Errors (device, error) VALUES (6, 'Error 6');
-
