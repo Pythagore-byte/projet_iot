@@ -41,23 +41,33 @@ async def toggle_error(error_id: int):
 @app.get("/temperatures-humidity")
 async def get_temperatures_humidity():
     c, conn = connect_db()
-    query = "SELECT device, value, recorded_at FROM Measurements WHERE device IN (1, 2)"
+    query = """
+        SELECT m.value, m.recorded_at, d.type 
+        FROM Measurements m 
+        JOIN Device d ON m.device = d.id 
+        WHERE d.type IN ('temperature', 'humidity')
+    """
     rows = c.execute(query).fetchall()
     disconnect_db(conn)
     temperatures = []
     humidity = []
     for row in rows:
         measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
-        if row["device"] == 1:
+        if row["type"] == "temperature":
             temperatures.append(measurement)
-        elif row["device"] == 2:
+        elif row["type"] == "humidity":
             humidity.append(measurement)
     return {"temperature": temperatures, "humidity": humidity}
 
 @app.get("/soil-humidity")
 async def get_soil_humidity():
     c, conn = connect_db()
-    query = "SELECT device, value, recorded_at FROM Measurements WHERE device IN (4,5,6)"
+    query = """
+        SELECT m.value, m.recorded_at, d.type 
+        FROM Measurements m 
+        JOIN Device d ON m.device = d.id 
+        WHERE d.type IN ('humidity10', 'humidity20', 'humidity30')
+    """
     rows = c.execute(query).fetchall()
     disconnect_db(conn)
     humidity10 = []
@@ -65,10 +75,10 @@ async def get_soil_humidity():
     humidity30 = []
     for row in rows:
         measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
-        if row["device"] == 4:
+        if row["type"] == "humidity10":
             humidity10.append(measurement)
-        elif row["device"] == 5:
+        elif row["type"] == "humidity20":
             humidity20.append(measurement)
-        elif row["device"] == 6:
+        elif row["type"] == "humidity30":
             humidity30.append(measurement)
     return {"humidity10": humidity10, "humidity20": humidity20, "humidity30": humidity30}
