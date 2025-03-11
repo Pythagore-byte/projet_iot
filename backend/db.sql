@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS Errors;
 
 CREATE TABLE Device(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type VARCHAR(255) NOT NULL CHECK(type IN ('temperature', 'humidity', 'humidity10', 'humidity20', 'humidity30', 'co2', 'pressure', 'luminosity'))
+    type VARCHAR(255) NOT NULL CHECK(type IN ('temperature', 'humidity', 'humidity10', 'humidity20', 'humidity30', 'co2', 'pressure', 'luminosity', 'battery'))
 );
 
 CREATE TABLE Measurements(
