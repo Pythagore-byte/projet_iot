@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/db.db:/app/db.db  # Persist DB
+    restart: always
+    depends_on:
+      - frontend
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - NPM_FLAGS=--legacy-peer-deps
+    ports:
+      - "3000:3000"
+    restart: always

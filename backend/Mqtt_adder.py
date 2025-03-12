@@ -17,38 +17,52 @@ port = 8883  # Port sécurisé MQTT
 # -------------------------
 # Connexion à la base SQLite
 # -------------------------
-conn = sqlite3.connect("db.db", check_same_thread=False)
-cursor = conn.cursor()
+def connect_db(db_path='db.db'):
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn, conn.cursor()
 
-# Création de la table si elle n'existe pas déjà
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS uplinks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
-    batterie REAL,
-    pression REAL,
-    co2 REAL,
-    lum REAL,
-    hum4 REAL,
-    hum3 REAL,
-    hum2 REAL,
-    hum1 REAL,
-    temp2 REAL,
-    temp1 REAL
-);
-""")
-conn.commit()
+conn, cursor = connect_db()
+
+# Mapping des capteurs selon le schéma de la base de données
+DEVICE_MAPPING = {
+    'temp2': 1,        # temperature
+    'hum1': 2,         # humidity
+    'temp1': 3,        # temperaturesol
+    'hum2': 4,         # humidity10
+    'hum3': 5,         # humidity20
+    'hum4': 6,         # humidity30
+    'lum': 7,          # luminosity
+    'co2': 8,          # co2
+    'pression': 10,    # pressure
+    'batterie': 11     # battery
+}
 
 def insert_uplink_in_db(batterie, pression, co2, lum, hum4, hum3, hum2, hum1, temp2, temp1):
-    """Insère les champs du payload dans la table uplinks."""
-    cursor.execute("""
-        INSERT INTO uplinks (
-            batterie, pression, co2, 
-            lum, hum4, hum3, hum2, hum1,
-            temp2, temp1
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (batterie, pression, co2, lum, hum4, hum3, hum2, hum1, temp2, temp1))
+    """Insère les champs du payload dans la table Measurements selon le mapping des capteurs."""
+    # Création d'un dictionnaire pour faciliter le traitement
+    values = {
+        'batterie': batterie,
+        'pression': pression,
+        'co2': co2,
+        'lum': lum,
+        'hum4': hum4,
+        'hum3': hum3,
+        'hum2': hum2,
+        'hum1': hum1,
+        'temp2': temp2,
+        'temp1': temp1
+    }
+    
+    # Insertion de chaque valeur dans la table Measurements
+    for sensor_name, value in values.items():
+        if value is not None and sensor_name in DEVICE_MAPPING:
+            device_id = DEVICE_MAPPING[sensor_name]
+            cursor.execute(
+                "INSERT INTO Measurements (device, value) VALUES (?, ?);",
+                (device_id, value)
+            )
+    
     conn.commit()
 
 # ---------------
