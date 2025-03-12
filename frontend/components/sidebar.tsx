@@ -19,7 +19,7 @@ const navItems = [
     label: "Air Temperature & Humidity",
     href: "/temperature-humidity",
   },
-  { icon: Droplet, label: "Soil Moisture", href: "/soil-moisture" },
+  { icon: Droplet, label: "Soil Data", href: "/soil-data" },
   { icon: Leaf, label: "Plant Suitability", href: "/plant-suitability" },
   { icon: AlertTriangle, label: "Errors", href: "/errors" },
 ];

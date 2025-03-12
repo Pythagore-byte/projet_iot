@@ -246,3 +246,20 @@ async def check_abnormal_measurements():
     
     disconnect_db(conn)
     return {"abnormal_changes": abnormal_changes}
+
+@app.get("/temperaturesol")
+async def get_temperaturesol():
+    c, conn = connect_db()
+    query = """
+        SELECT m.value, m.recorded_at, d.type 
+        FROM Measurements m 
+        JOIN Device d ON m.device = d.id 
+        WHERE d.type = 'temperaturesol'
+    """
+    rows = c.execute(query).fetchall()
+    disconnect_db(conn)
+    temperaturesol = []
+    for row in rows:
+        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        temperaturesol.append(measurement)
+    return {"temperaturesol": temperaturesol}

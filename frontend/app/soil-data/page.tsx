@@ -14,6 +14,7 @@ interface SoilMoistureData {
   humidity10: Measurement[];
   humidity20: Measurement[];
   humidity30: Measurement[];
+  temperaturesol?: Measurement[];
 }
 
 async function getMeasurements() {
@@ -21,10 +22,15 @@ async function getMeasurements() {
   return res.data;
 }
 
+async function getTemperatureSol() {
+  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/temperaturesol`);
+  return res.data;
+}
+
 export default function SoilMoisturePage() {
   const [data, setData] = useState<SoilMoistureData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'10cm' | '20cm' | '30cm'>('10cm');
+  const [activeTab, setActiveTab] = useState<'10cm' | '20cm' | '30cm' | 'temp'>('10cm');
 
   useEffect(() => {
     fetchData();
@@ -34,8 +40,12 @@ export default function SoilMoisturePage() {
 
   async function fetchData() {
     try {
-      const data = await getMeasurements();
-      setData(data);
+      const moistureData = await getMeasurements();
+      const tempData = await getTemperatureSol();
+      setData({
+        ...moistureData,
+        temperaturesol: tempData.temperaturesol
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,10 +80,12 @@ export default function SoilMoisturePage() {
   const latest10cm = data?.humidity10[data.humidity10.length - 1]?.value ?? 0;
   const latest20cm = data?.humidity20[data.humidity20.length - 1]?.value ?? 0;
   const latest30cm = data?.humidity30[data.humidity30.length - 1]?.value ?? 0;
+  const latestTemp = data?.temperaturesol?.[data.temperaturesol.length - 1]?.value ?? 0;
 
   const stats10cm = getStats(data?.humidity10 ?? []);
   const stats20cm = getStats(data?.humidity20 ?? []);
   const stats30cm = getStats(data?.humidity30 ?? []);
+  const statsTemp = getStats(data?.temperaturesol ?? []);
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -92,20 +104,21 @@ export default function SoilMoisturePage() {
         <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4 sm:gap-6">
             <h2 className="text-lg font-semibold text-[#7da06c]">Clay Soil Profile Analysis</h2>
-            <div className="w-full sm:w-auto grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 text-sm">
+            <div className="w-full sm:w-auto grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-6 text-sm">
               {[
                 { depth: '10cm', stats: stats10cm },
                 { depth: '20cm', stats: stats20cm },
-                { depth: '30cm', stats: stats30cm }
+                { depth: '30cm', stats: stats30cm },
+                { depth: 'Temp', stats: statsTemp, isTemp: true }
               ].map((layer, i) => (
                 <div key={i} className="text-center bg-white/90 px-4 py-2 rounded-lg shadow-sm">
                   <div className="font-semibold text-gray-700">{layer.depth}</div>
                   <div className="text-xs space-x-2 text-gray-500">
-                    <span>Avg: {layer.stats.avg}%</span>
+                    <span>Avg: {layer.stats.avg}{layer.isTemp ? '°C' : '%'}</span>
                     <span>•</span>
-                    <span className="text-red-500">Min: {layer.stats.min}%</span>
+                    <span className="text-red-500">Min: {layer.stats.min}{layer.isTemp ? '°C' : '%'}</span>
                     <span>•</span>
-                    <span className="text-green-500">Max: {layer.stats.max}%</span>
+                    <span className="text-green-500">Max: {layer.stats.max}{layer.isTemp ? '°C' : '%'}</span>
                   </div>
                 </div>
               ))}
@@ -121,11 +134,12 @@ export default function SoilMoisturePage() {
       </div>
 
       {/* History Graphs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
-          { data: data?.humidity10, depth: '10cm', stats: stats10cm },
-          { data: data?.humidity20, depth: '20cm', stats: stats20cm },
-          { data: data?.humidity30, depth: '30cm', stats: stats30cm }
+          { data: data?.humidity10, depth: '10cm', stats: stats10cm, unit: '%', label: 'Moisture' },
+          { data: data?.humidity20, depth: '20cm', stats: stats20cm, unit: '%', label: 'Moisture' },
+          { data: data?.humidity30, depth: '30cm', stats: stats30cm, unit: '%', label: 'Moisture' },
+          { data: data?.temperaturesol, depth: 'Soil Temp', stats: statsTemp, unit: '°C', label: 'Temperature', color: '#e67e22' }
         ].map((layer, i) => (
           <div key={i} className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gray-100">
             <div className="flex justify-between items-start mb-4">
@@ -161,16 +175,16 @@ export default function SoilMoisturePage() {
                     textAnchor="end"
                     height={70}
                   />
-                  <YAxis domain={[0, 100]} unit="%" />
+                  <YAxis domain={layer.unit === '%' ? [0, 100] : [0, 50]} unit={layer.unit} />
                   <Tooltip 
                     labelFormatter={(value) => new Date(value).toLocaleString()}
-                    formatter={(value: number) => [`${value}%`, 'Moisture']}
+                    formatter={(value: number) => [`${value}${layer.unit}`, layer.label]}
                     contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="#7da06c"
+                    stroke={layer.color || "#7da06c"}
                     strokeWidth={2}
                     dot={false}
                     animationDuration={300}
@@ -185,7 +199,7 @@ export default function SoilMoisturePage() {
       {/* Table Section */}
       <div className="space-y-4">
         <div className="flex space-x-2 border-b">
-          {['10cm', '20cm', '30cm'].map((depth) => (
+          {['10cm', '20cm', '30cm', 'temp'].map((depth) => (
             <button
               key={depth}
               className={`px-4 py-2 font-semibold transition-colors ${
@@ -201,14 +215,16 @@ export default function SoilMoisturePage() {
         </div>
         
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100">
-          {['10cm', '20cm', '30cm'].map((depth) => (
+          {['10cm', '20cm', '30cm', 'temp'].map((depth) => (
             activeTab === depth && (
               <MeasurementTable 
                 key={depth}
-                data={data?.[`humidity${depth.replace('cm', '')}` as keyof SoilMoistureData] ?? []} 
-                unit="%"
-                type={`Soil Moisture (${depth})`}
-                headerColor="#7da06c"
+                data={depth === 'temp' ? 
+                  (data?.temperaturesol ?? []) : 
+                  (data?.[`humidity${depth.replace('cm', '')}` as keyof SoilMoistureData] ?? [])} 
+                unit={depth === 'temp' ? '°C' : '%'}
+                type={depth === 'temp' ? 'Soil Temperature' : `Soil Moisture (${depth})`}
+                headerColor={depth === 'temp' ? '#e67e22' : '#7da06c'}
               />
             )
           ))}

@@ -68,7 +68,7 @@ def main():
     conn, c = connect_db()
     create_tables(c) 
     init_capteurs(c)
-    add_dummy_records(c, 11, 100)
+    add_dummy_records(c, 11, 200)
     add_dummy_errors(c, 100)
     conn.commit()
     conn.close()
