@@ -10,6 +10,7 @@ public:
     CO2Sensor(uint8_t i2cAddress = SCD30_I2C_ADDR_61);
     void init();
     float getCO2();
+    void restartSensor();  // Ajout de la fonction de redémarrage manuel
 
 private:
     SensirionI2cScd30 _sensor;
