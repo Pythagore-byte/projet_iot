@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import sqlite3
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+import pytz 
 
 app = FastAPI()
 
@@ -21,12 +23,32 @@ def disconnect_db(conn):
     conn.commit()
     conn.close()
 
+def convert_timestamp(timestamp_str, target_timezone='Europe/Paris'):
+    """Convert a timestamp string to the target timezone."""
+    try:
+        # Parse the timestamp (SQLite timestamps are stored in UTC by default, but without Z marker)        
+        # First, parse the timestamp as a naive datetime
+        dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+        
+        # Explicitly set the timezone to UTC
+        dt = dt.replace(tzinfo=pytz.UTC)
+        
+        # Now convert to target timezone
+        target_tz = pytz.timezone(target_timezone)
+        converted_dt = dt.astimezone(target_tz)
+        
+        # Format to string (including timezone info)
+        return converted_dt.strftime('%Y-%m-%d %H:%M:%S %z')
+    except Exception as e:
+        # Return original if conversion fails
+        return timestamp_str
+
 @app.get("/errors")
 async def get_errors():
     c, conn = connect_db()
     rows = c.execute("SELECT id, device, error, handled, recorded_at FROM Errors").fetchall()
     disconnect_db(conn)
-    return [{"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": row["recorded_at"]} for row in rows]
+    return [{"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": convert_timestamp(row["recorded_at"])} for row in rows]
 
 @app.put("/errors/{error_id}/toggle")
 async def toggle_error(error_id: int):
@@ -35,7 +57,7 @@ async def toggle_error(error_id: int):
     row = c.execute("SELECT id, device, error, handled, recorded_at FROM Errors WHERE id = ?", (error_id,)).fetchone()
     disconnect_db(conn)
     if row:
-        return {"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": row["recorded_at"]}
+        return {"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": convert_timestamp(row["recorded_at"])}
     return {"error": "Error not found"}
 
 @app.get("/temperatures-humidity")
@@ -52,7 +74,7 @@ async def get_temperatures_humidity():
     temperatures = []
     humidity = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         if row["type"] == "temperature":
             temperatures.append(measurement)
         elif row["type"] == "humidity":
@@ -74,7 +96,7 @@ async def get_soil_humidity():
     humidity20 = []
     humidity30 = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         if row["type"] == "humidity10":
             humidity10.append(measurement)
         elif row["type"] == "humidity20":
@@ -96,7 +118,7 @@ async def get_luminosity():
     disconnect_db(conn)
     luminosity = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         luminosity.append(measurement)
     return {"luminosity": luminosity}
 
@@ -113,7 +135,7 @@ async def get_co2():
     disconnect_db(conn)
     co2 = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         co2.append(measurement)
     return {"co2": co2}
 
@@ -130,7 +152,7 @@ async def get_pressure():
     disconnect_db(conn)
     pressure = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         pressure.append(measurement)
     return {"pressure": pressure}
 
@@ -147,7 +169,7 @@ async def get_battery():
     disconnect_db(conn)
     battery = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         battery.append(measurement)
     return {"battery": battery}
 
@@ -191,7 +213,7 @@ async def check_abnormal_measurements():
         measurements_by_type[device_type].append({
             "device": row["device"],
             "value": row["value"],
-            "recorded_at": row["recorded_at"]
+            "recorded_at": convert_timestamp(row["recorded_at"])
         })
     
     # Check for abnormal changes
@@ -241,7 +263,7 @@ async def check_abnormal_measurements():
                         "current_value": curr_measurement["value"],
                         "difference": diff,
                         "threshold": threshold,
-                        "recorded_at": curr_measurement["recorded_at"]
+                        "recorded_at": convert_timestamp(curr_measurement["recorded_at"])
                     })
     
     disconnect_db(conn)
@@ -260,6 +282,6 @@ async def get_temperaturesol():
     disconnect_db(conn)
     temperaturesol = []
     for row in rows:
-        measurement = {"value": row["value"], "recorded_at": row["recorded_at"]}
+        measurement = {"value": row["value"], "recorded_at": convert_timestamp(row["recorded_at"])}
         temperaturesol.append(measurement)
     return {"temperaturesol": temperaturesol}

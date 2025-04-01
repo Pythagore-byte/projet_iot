@@ -38,6 +38,40 @@ DEVICE_MAPPING = {
     'batterie': 11     # battery
 }
 
+# Define acceptable ranges for each sensor type
+SENSOR_VALIDATION = {
+    'temp1': {'min': -10, 'max': 60, 'description': 'Soil temperature'},  # Soil temperature in °C
+    'temp2': {'min': -10, 'max': 50, 'description': 'Air temperature'},   # Air temperature in °C
+    'hum1': {'min': 0, 'max': 100, 'description': 'Air humidity'},        # Air humidity %
+    'hum2': {'min': 0, 'max': 100, 'description': 'Soil humidity 10cm'},  # Soil humidity at 10cm %
+    'hum3': {'min': 0, 'max': 100, 'description': 'Soil humidity 20cm'},  # Soil humidity at 20cm %
+    'hum4': {'min': 0, 'max': 100, 'description': 'Soil humidity 30cm'},  # Soil humidity at 30cm %
+    'lum': {'min': 0, 'max': 100000, 'description': 'Luminosity'},        # Luminosity in lux
+    'co2': {'min': 0, 'max': 5000, 'description': 'CO2 level'},           # CO2 in ppm
+    'pression': {'min': 900, 'max': 1100, 'description': 'Atmospheric pressure'}, # Pressure in hPa
+    'batterie': {'min': 0, 'max': 100, 'description': 'Battery level'}    # Battery percentage
+}
+
+def validate_sensor_value(sensor_name, value):
+    """
+    Validates if a sensor value is within the acceptable range.
+    Returns (is_valid, error_message)
+    """
+    if value is None:
+        return False, "Value is missing"
+    
+    if sensor_name not in SENSOR_VALIDATION:
+        return False, f"Unknown sensor type: {sensor_name}"
+    
+    validation = SENSOR_VALIDATION[sensor_name]
+    if not isinstance(value, (int, float)):
+        return False, f"Value must be numeric, got {type(value)}"
+    
+    if value < validation['min'] or value > validation['max']:
+        return False, f"Value {value} out of range ({validation['min']}-{validation['max']}) for {validation['description']}"
+    
+    return True, None
+
 def insert_uplink_in_db(batterie, pression, co2, lum, hum4, hum3, hum2, hum1, temp2, temp1):
     """Insère les champs du payload dans la table Measurements selon le mapping des capteurs."""
     # Création d'un dictionnaire pour faciliter le traitement
@@ -54,14 +88,26 @@ def insert_uplink_in_db(batterie, pression, co2, lum, hum4, hum3, hum2, hum1, te
         'temp1': temp1
     }
     
-    # Insertion de chaque valeur dans la table Measurements
+    # Insertion de chaque valeur dans la table Measurements après validation
     for sensor_name, value in values.items():
         if value is not None and sensor_name in DEVICE_MAPPING:
             device_id = DEVICE_MAPPING[sensor_name]
-            cursor.execute(
-                "INSERT INTO Measurements (device, value) VALUES (?, ?);",
-                (device_id, value)
-            )
+            
+            # Validate the sensor value
+            is_valid, error_message = validate_sensor_value(sensor_name, value)
+            
+            if is_valid:
+                # Insert valid value into measurements
+                cursor.execute(
+                    "INSERT INTO Measurements (device, value) VALUES (?, ?);",
+                    (device_id, value)
+                )
+            else:
+                # Insert error for invalid value
+                cursor.execute(
+                    "INSERT INTO Errors (device, error) VALUES (?, ?);", 
+                    (device_id, error_message)
+                )
     
     conn.commit()
 
