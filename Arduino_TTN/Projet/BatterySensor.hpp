@@ -1,19 +1,25 @@
-#ifndef BATTERY_SENSOR_H
-#define BATTERY_SENSOR_H
+#ifndef BATTERY_SENSOR_HPP
+#define BATTERY_SENSOR_HPP
 
 #include <Arduino.h>
 
 class BatterySensor {
 public:
-    BatterySensor(uint8_t pin, int minVal, int maxVal);
+    BatterySensor(uint8_t pin, float vRef = 3.3, float ratioDiv = 2.0);
     void init();
-    int getRawValue();
-    int getBatteryLevel(); 
+    float getBatteryVoltage();
+    float getBatteryPercentage();
 
 private:
     uint8_t _pin;
-    int _minVal;
-    int _maxVal;
+    float _vRef;
+    float _ratioDiv;
+
+    float voltageToPercentInterpolated(float voltage);
+
+    static const int TABLE_SIZE;
+    static const float voltageTable[];
+    static const float percentTable[];
 };
 
 #endif
