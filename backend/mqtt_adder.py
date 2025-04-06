@@ -103,11 +103,19 @@ def insert_uplink_in_db(batterie, pression, co2, lum, hum4, hum3, hum2, hum1, te
                     (device_id, value)
                 )
             else:
-                # Insert error for invalid value
+                # Check if an error for this device already exists
                 cursor.execute(
-                    "INSERT INTO Errors (device, error) VALUES (?, ?);", 
+                    "SELECT COUNT(*) FROM Errors WHERE device = ? AND error = ?;",
                     (device_id, error_message)
                 )
+                error_exists = cursor.fetchone()[0] > 0
+
+                if not error_exists:
+                    # Insert error for invalid value if it doesn't already exist
+                    cursor.execute(
+                        "INSERT INTO Errors (device, error) VALUES (?, ?);", 
+                        (device_id, error_message)
+                    )
     
     conn.commit()
 

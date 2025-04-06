@@ -37,8 +37,8 @@ def convert_timestamp(timestamp_str, target_timezone='Europe/Paris'):
         target_tz = pytz.timezone(target_timezone)
         converted_dt = dt.astimezone(target_tz)
         
-        # Format to string (including timezone info)
-        return converted_dt.strftime('%Y-%m-%d %H:%M:%S %z')
+        # Format to string without timezone info
+        return converted_dt.strftime('%Y-%m-%d %H:%M:%S')
     except Exception as e:
         # Return original if conversion fails
         return timestamp_str
@@ -48,6 +48,9 @@ async def get_errors():
     c, conn = connect_db()
     rows = c.execute("SELECT id, device, error, handled, recorded_at FROM Errors").fetchall()
     disconnect_db(conn)
+    #print the first row 
+    print(rows[0]['recorded_at'])
+    print(convert_timestamp(rows[0]['recorded_at']))
     return [{"id": row["id"], "device": row["device"], "error": row["error"], "handled": bool(row["handled"]), "recorded_at": convert_timestamp(row["recorded_at"])} for row in rows]
 
 @app.put("/errors/{error_id}/toggle")
