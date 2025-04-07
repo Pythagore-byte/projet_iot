@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   LineChart,
@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import SoilMoistureVisual from "@/components/SoilMoistureVisual";
 
@@ -27,6 +28,7 @@ interface SoilMoistureData {
 }
 
 type GraphType = "10cm" | "20cm" | "30cm" | "soil-temp" | null;
+type TimeRange = "1h" | "6h" | "12h" | "24h" | "3d" | "7d" | "all";
 
 async function getMeasurements() {
   const res = await axios.get(
@@ -49,6 +51,22 @@ export default function SoilMoisturePage() {
     "10cm"
   );
   const [maximizedGraph, setMaximizedGraph] = useState<GraphType>(null);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>("all");
+
+  // For custom zoom with mouse
+  const [zoom10cmData, setZoom10cmData] = useState<Measurement[] | null>(null);
+  const [zoom20cmData, setZoom20cmData] = useState<Measurement[] | null>(null);
+  const [zoom30cmData, setZoom30cmData] = useState<Measurement[] | null>(null);
+  const [zoomTempData, setZoomTempData] = useState<Measurement[] | null>(null);
+
+  const [refArea10cmLeft, setRefArea10cmLeft] = useState("");
+  const [refArea10cmRight, setRefArea10cmRight] = useState("");
+  const [refArea20cmLeft, setRefArea20cmLeft] = useState("");
+  const [refArea20cmRight, setRefArea20cmRight] = useState("");
+  const [refArea30cmLeft, setRefArea30cmLeft] = useState("");
+  const [refArea30cmRight, setRefArea30cmRight] = useState("");
+  const [refAreaTempLeft, setRefAreaTempLeft] = useState("");
+  const [refAreaTempRight, setRefAreaTempRight] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -64,10 +82,62 @@ export default function SoilMoisturePage() {
         ...moistureData,
         temperaturesol: tempData.temperaturesol,
       });
+
+      // Reset zoom data on refresh
+      setZoom10cmData(null);
+      setZoom20cmData(null);
+      setZoom30cmData(null);
+      setZoomTempData(null);
     } finally {
       setIsLoading(false);
     }
   }
+
+  // Filter data based on selected time range
+  const filteredData = useMemo(() => {
+    if (!data) return null;
+
+    const now = new Date();
+    let startTime: Date;
+
+    switch (selectedTimeRange) {
+      case "1h":
+        startTime = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case "6h":
+        startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        break;
+      case "12h":
+        startTime = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        break;
+      case "24h":
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case "3d":
+        startTime = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        break;
+      case "7d":
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        return data;
+    }
+
+    return {
+      humidity10: data.humidity10.filter(
+        (m) => new Date(m.recorded_at) >= startTime
+      ),
+      humidity20: data.humidity20.filter(
+        (m) => new Date(m.recorded_at) >= startTime
+      ),
+      humidity30: data.humidity30.filter(
+        (m) => new Date(m.recorded_at) >= startTime
+      ),
+      temperaturesol: data.temperaturesol?.filter(
+        (m) => new Date(m.recorded_at) >= startTime
+      ),
+    };
+  }, [data, selectedTimeRange]);
 
   // Calculate statistics
   const getStats = (measurements: Measurement[]) => {
@@ -78,6 +148,147 @@ export default function SoilMoisturePage() {
       min: Math.min(...values),
       max: Math.max(...values),
     };
+  };
+
+  // Zoom handlers
+  const handleMouseDown = (e: any, sensor: GraphType) => {
+    if (!e) return;
+
+    if (sensor === "10cm") setRefArea10cmLeft(e.activeLabel);
+    else if (sensor === "20cm") setRefArea20cmLeft(e.activeLabel);
+    else if (sensor === "30cm") setRefArea30cmLeft(e.activeLabel);
+    else if (sensor === "soil-temp") setRefAreaTempLeft(e.activeLabel);
+  };
+
+  const handleMouseMove = (e: any, sensor: GraphType) => {
+    if (!e) return;
+
+    if (sensor === "10cm" && refArea10cmLeft) {
+      setRefArea10cmRight(e.activeLabel);
+    } else if (sensor === "20cm" && refArea20cmLeft) {
+      setRefArea20cmRight(e.activeLabel);
+    } else if (sensor === "30cm" && refArea30cmLeft) {
+      setRefArea30cmRight(e.activeLabel);
+    } else if (sensor === "soil-temp" && refAreaTempLeft) {
+      setRefAreaTempRight(e.activeLabel);
+    }
+  };
+
+  const handleMouseUp = (sensor: GraphType) => {
+    if (sensor === "10cm") {
+      if (!refArea10cmLeft || !refArea10cmRight || !data?.humidity10) {
+        setRefArea10cmLeft("");
+        setRefArea10cmRight("");
+        return;
+      }
+
+      // Ensure left is before right
+      let refLeft = refArea10cmLeft;
+      let refRight = refArea10cmRight;
+
+      if (new Date(refLeft).getTime() > new Date(refRight).getTime()) {
+        [refLeft, refRight] = [refRight, refLeft];
+      }
+
+      // Filter data based on selected range
+      const zoomedData = data.humidity10.filter(
+        (item) =>
+          new Date(item.recorded_at) >= new Date(refLeft) &&
+          new Date(item.recorded_at) <= new Date(refRight)
+      );
+
+      if (zoomedData.length > 0) {
+        setZoom10cmData(zoomedData);
+      }
+
+      setRefArea10cmLeft("");
+      setRefArea10cmRight("");
+    } else if (sensor === "20cm") {
+      if (!refArea20cmLeft || !refArea20cmRight || !data?.humidity20) {
+        setRefArea20cmLeft("");
+        setRefArea20cmRight("");
+        return;
+      }
+
+      let refLeft = refArea20cmLeft;
+      let refRight = refArea20cmRight;
+
+      if (new Date(refLeft).getTime() > new Date(refRight).getTime()) {
+        [refLeft, refRight] = [refRight, refLeft];
+      }
+
+      const zoomedData = data.humidity20.filter(
+        (item) =>
+          new Date(item.recorded_at) >= new Date(refLeft) &&
+          new Date(item.recorded_at) <= new Date(refRight)
+      );
+
+      if (zoomedData.length > 0) {
+        setZoom20cmData(zoomedData);
+      }
+
+      setRefArea20cmLeft("");
+      setRefArea20cmRight("");
+    } else if (sensor === "30cm") {
+      if (!refArea30cmLeft || !refArea30cmRight || !data?.humidity30) {
+        setRefArea30cmLeft("");
+        setRefArea30cmRight("");
+        return;
+      }
+
+      let refLeft = refArea30cmLeft;
+      let refRight = refArea30cmRight;
+
+      if (new Date(refLeft).getTime() > new Date(refRight).getTime()) {
+        [refLeft, refRight] = [refRight, refLeft];
+      }
+
+      const zoomedData = data.humidity30.filter(
+        (item) =>
+          new Date(item.recorded_at) >= new Date(refLeft) &&
+          new Date(item.recorded_at) <= new Date(refRight)
+      );
+
+      if (zoomedData.length > 0) {
+        setZoom30cmData(zoomedData);
+      }
+
+      setRefArea30cmLeft("");
+      setRefArea30cmRight("");
+    } else if (sensor === "soil-temp") {
+      if (!refAreaTempLeft || !refAreaTempRight || !data?.temperaturesol) {
+        setRefAreaTempLeft("");
+        setRefAreaTempRight("");
+        return;
+      }
+
+      let refLeft = refAreaTempLeft;
+      let refRight = refAreaTempRight;
+
+      if (new Date(refLeft).getTime() > new Date(refRight).getTime()) {
+        [refLeft, refRight] = [refRight, refLeft];
+      }
+
+      const zoomedData = data.temperaturesol.filter(
+        (item) =>
+          new Date(item.recorded_at) >= new Date(refLeft) &&
+          new Date(item.recorded_at) <= new Date(refRight)
+      );
+
+      if (zoomedData.length > 0) {
+        setZoomTempData(zoomedData);
+      }
+
+      setRefAreaTempLeft("");
+      setRefAreaTempRight("");
+    }
+  };
+
+  const resetZoom = (sensor: GraphType) => {
+    if (sensor === "10cm") setZoom10cmData(null);
+    else if (sensor === "20cm") setZoom20cmData(null);
+    else if (sensor === "30cm") setZoom30cmData(null);
+    else if (sensor === "soil-temp") setZoomTempData(null);
   };
 
   if (isLoading) {
@@ -95,16 +306,27 @@ export default function SoilMoisturePage() {
     );
   }
 
+  const displayData = selectedTimeRange === "all" ? data : filteredData;
   const latest10cm = data?.humidity10[data.humidity10.length - 1]?.value ?? 0;
   const latest20cm = data?.humidity20[data.humidity20.length - 1]?.value ?? 0;
   const latest30cm = data?.humidity30[data.humidity30.length - 1]?.value ?? 0;
   const latestTemp =
     data?.temperaturesol?.[data.temperaturesol.length - 1]?.value ?? 0;
 
-  const stats10cm = getStats(data?.humidity10 ?? []);
-  const stats20cm = getStats(data?.humidity20 ?? []);
-  const stats30cm = getStats(data?.humidity30 ?? []);
-  const statsTemp = getStats(data?.temperaturesol ?? []);
+  const stats10cm = getStats(displayData?.humidity10 ?? []);
+  const stats20cm = getStats(displayData?.humidity20 ?? []);
+  const stats30cm = getStats(displayData?.humidity30 ?? []);
+  const statsTemp = getStats(displayData?.temperaturesol ?? []);
+
+  const timeRangeOptions: { value: TimeRange; label: string }[] = [
+    { value: "1h", label: "Last Hour" },
+    { value: "6h", label: "6 Hours" },
+    { value: "12h", label: "12 Hours" },
+    { value: "24h", label: "Last Day" },
+    { value: "3d", label: "3 Days" },
+    { value: "7d", label: "Last Week" },
+    { value: "all", label: "All Data" },
+  ];
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
@@ -119,6 +341,36 @@ export default function SoilMoisturePage() {
                 data.humidity10[data.humidity10.length - 1].recorded_at
               ).toLocaleString()
             : "N/A"}
+        </div>
+      </div>
+
+      {/* Time Range Selector - Updated to be horizontally scrollable on mobile */}
+      <div className="flex flex-wrap items-center mb-6">
+        <span className="text-sm text-gray-500 mr-2 whitespace-nowrap">
+          Display range:
+        </span>
+        <div className="overflow-x-auto pb-2 flex-1 scrollbar-hide">
+          <div className="flex gap-2 min-w-min">
+            {timeRangeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  setSelectedTimeRange(option.value);
+                  setZoom10cmData(null);
+                  setZoom20cmData(null);
+                  setZoom30cmData(null);
+                  setZoomTempData(null);
+                }}
+                className={`px-3 py-1 text-sm rounded-full whitespace-nowrap flex-shrink-0 ${
+                  selectedTimeRange === option.value
+                    ? "bg-[#7da06c] text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -176,37 +428,49 @@ export default function SoilMoisturePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
           {
-            data: data?.humidity10,
+            data: displayData?.humidity10,
+            zoomData: zoom10cmData,
             depth: "10cm",
             stats: stats10cm,
             unit: "%",
             label: "Moisture",
             graphType: "10cm" as GraphType,
+            refAreaLeft: refArea10cmLeft,
+            refAreaRight: refArea10cmRight,
           },
           {
-            data: data?.humidity20,
+            data: displayData?.humidity20,
+            zoomData: zoom20cmData,
             depth: "20cm",
             stats: stats20cm,
             unit: "%",
             label: "Moisture",
             graphType: "20cm" as GraphType,
+            refAreaLeft: refArea20cmLeft,
+            refAreaRight: refArea20cmRight,
           },
           {
-            data: data?.humidity30,
+            data: displayData?.humidity30,
+            zoomData: zoom30cmData,
             depth: "30cm",
             stats: stats30cm,
             unit: "%",
             label: "Moisture",
             graphType: "30cm" as GraphType,
+            refAreaLeft: refArea30cmLeft,
+            refAreaRight: refArea30cmRight,
           },
           {
-            data: data?.temperaturesol,
+            data: displayData?.temperaturesol,
+            zoomData: zoomTempData,
             depth: "Soil Temp",
             stats: statsTemp,
             unit: "°C",
             label: "Temperature",
             color: "#e67e22",
             graphType: "soil-temp" as GraphType,
+            refAreaLeft: refAreaTempLeft,
+            refAreaRight: refAreaTempRight,
           },
         ].map((layer, i) => (
           <div
@@ -245,6 +509,15 @@ export default function SoilMoisturePage() {
                     "N/A"
                   )}
                 </div>
+                {layer.zoomData && (
+                  <button
+                    onClick={() => resetZoom(layer.graphType)}
+                    className="p-1 rounded text-xs bg-gray-100 hover:bg-gray-200 text-gray-600"
+                    title="Reset zoom"
+                  >
+                    Reset
+                  </button>
+                )}
                 <button
                   onClick={() => setMaximizedGraph(layer.graphType)}
                   className="p-1 rounded hover:bg-gray-100"
@@ -267,9 +540,18 @@ export default function SoilMoisturePage() {
                 </button>
               </div>
             </div>
+            <div className="text-xs text-gray-500 mb-2">
+              Drag horizontally on the graph to zoom in on a specific time
+              period
+            </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={layer.data}>
+                <LineChart
+                  data={layer.zoomData || layer.data}
+                  onMouseDown={(e) => handleMouseDown(e, layer.graphType)}
+                  onMouseMove={(e) => handleMouseMove(e, layer.graphType)}
+                  onMouseUp={() => handleMouseUp(layer.graphType)}
+                >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                   <XAxis
                     dataKey="recorded_at"
@@ -308,6 +590,15 @@ export default function SoilMoisturePage() {
                     dot={false}
                     animationDuration={300}
                   />
+                  {layer.refAreaLeft && layer.refAreaRight ? (
+                    <ReferenceArea
+                      x1={layer.refAreaLeft}
+                      x2={layer.refAreaRight}
+                      strokeOpacity={0.3}
+                      fill={layer.color || "#7da06c"}
+                      fillOpacity={0.3}
+                    />
+                  ) : null}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -341,8 +632,8 @@ export default function SoilMoisturePage() {
                   key={depth}
                   data={
                     depth === "temp"
-                      ? data?.temperaturesol ?? []
-                      : data?.[
+                      ? displayData?.temperaturesol ?? []
+                      : displayData?.[
                           `humidity${depth.replace(
                             "cm",
                             ""
@@ -395,19 +686,73 @@ export default function SoilMoisturePage() {
               </button>
             </div>
 
+            {/* Time range controls - Made horizontally scrollable for mobile */}
+            <div className="p-4 pb-0 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    Display range:
+                  </span>
+                  <div className="overflow-x-auto scrollbar-hide flex-1">
+                    <div className="flex gap-2 min-w-min">
+                      {timeRangeOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setSelectedTimeRange(option.value);
+                            setZoom10cmData(null);
+                            setZoom20cmData(null);
+                            setZoom30cmData(null);
+                            setZoomTempData(null);
+                          }}
+                          className={`px-3 py-1 text-sm rounded-full whitespace-nowrap flex-shrink-0 ${
+                            selectedTimeRange === option.value
+                              ? "bg-[#7da06c] text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex ml-auto">
+                  {((maximizedGraph === "10cm" && zoom10cmData) ||
+                    (maximizedGraph === "20cm" && zoom20cmData) ||
+                    (maximizedGraph === "30cm" && zoom30cmData) ||
+                    (maximizedGraph === "soil-temp" && zoomTempData)) && (
+                    <button
+                      onClick={() => resetZoom(maximizedGraph)}
+                      className="p-1 rounded text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 flex-shrink-0"
+                    >
+                      Reset zoom
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex-grow p-4">
-              <ResponsiveContainer width="100%" height="100%">
+              <div className="text-sm text-gray-500 mb-2">
+                Drag horizontally on the graph to zoom in on a specific time
+                period
+              </div>
+              <ResponsiveContainer width="100%" height="90%">
                 <LineChart
                   data={
                     maximizedGraph === "soil-temp"
-                      ? data?.temperaturesol
+                      ? zoomTempData || displayData?.temperaturesol
                       : maximizedGraph === "10cm"
-                      ? data?.humidity10
+                      ? zoom10cmData || displayData?.humidity10
                       : maximizedGraph === "20cm"
-                      ? data?.humidity20
-                      : data?.humidity30
+                      ? zoom20cmData || displayData?.humidity20
+                      : zoom30cmData || displayData?.humidity30
                   }
                   margin={{ top: 10, right: 30, left: 20, bottom: 70 }}
+                  onMouseDown={(e) => handleMouseDown(e, maximizedGraph)}
+                  onMouseMove={(e) => handleMouseMove(e, maximizedGraph)}
+                  onMouseUp={() => handleMouseUp(maximizedGraph)}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -447,6 +792,50 @@ export default function SoilMoisturePage() {
                     strokeWidth={2}
                     dot={{ r: 2 }}
                   />
+                  {maximizedGraph === "soil-temp" &&
+                  refAreaTempLeft &&
+                  refAreaTempRight ? (
+                    <ReferenceArea
+                      x1={refAreaTempLeft}
+                      x2={refAreaTempRight}
+                      strokeOpacity={0.3}
+                      fill="#e67e22"
+                      fillOpacity={0.3}
+                    />
+                  ) : null}
+                  {maximizedGraph === "10cm" &&
+                  refArea10cmLeft &&
+                  refArea10cmRight ? (
+                    <ReferenceArea
+                      x1={refArea10cmLeft}
+                      x2={refArea10cmRight}
+                      strokeOpacity={0.3}
+                      fill="#7da06c"
+                      fillOpacity={0.3}
+                    />
+                  ) : null}
+                  {maximizedGraph === "20cm" &&
+                  refArea20cmLeft &&
+                  refArea20cmRight ? (
+                    <ReferenceArea
+                      x1={refArea20cmLeft}
+                      x2={refArea20cmRight}
+                      strokeOpacity={0.3}
+                      fill="#7da06c"
+                      fillOpacity={0.3}
+                    />
+                  ) : null}
+                  {maximizedGraph === "30cm" &&
+                  refArea30cmLeft &&
+                  refArea30cmRight ? (
+                    <ReferenceArea
+                      x1={refArea30cmLeft}
+                      x2={refArea30cmRight}
+                      strokeOpacity={0.3}
+                      fill="#7da06c"
+                      fillOpacity={0.3}
+                    />
+                  ) : null}
                 </LineChart>
               </ResponsiveContainer>
             </div>
