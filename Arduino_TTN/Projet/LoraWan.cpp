@@ -1,4 +1,5 @@
 #include "LoRaWan.hpp"
+#include <ArduinoLowPower.h>
 
 // Initialisation du modem LoRa
 LoRaModem modem;
@@ -19,13 +20,13 @@ void configureLoRaWAN() {
 
     if (!modem.begin(region)) {
         Serial.println("Erreur: impossible d'initialiser le modem !");
-        while (1);
+        LowPower.deepSleep(100000);
     }
 
     Serial.println("=== Connexion OTAA en cours... ===");
     if (!modem.joinOTAA(appEUI, appKey, devEUI)) {
         Serial.println("Erreur: OTAA échouée !");
-        while (1);
+        LowPower.deepSleep(100000);
     }
 
     Serial.println("=== Connecté à TTN via OTAA ! ===");

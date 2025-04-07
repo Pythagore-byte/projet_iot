@@ -22,9 +22,9 @@ DFRobot_BMP388_I2C sensor(&Wire, sensor.eSDOGND);
 SoilTemperatureSensor soilTempSensor(5); // prototype 8
 CO2Sensor co2Sensor;
 LightSensor lightSensor(0x23);
-SoilMoistureSensor sensor1(A1, 3700, 1750); 
-SoilMoistureSensor sensor2(A2, 3700, 1750);
-SoilMoistureSensor sensor3(A3, 3700, 1750);
+SoilMoistureSensor sensor1(A1, 3800, 9); // 20cm
+SoilMoistureSensor sensor2(A2, 3800, 14); //10cm
+SoilMoistureSensor sensor3(A3, 3800, 6); // 30cm
 BatterySensor battery(A0, 3.3, 2.0);
 
 
@@ -140,10 +140,10 @@ void loop() {
     uint16_t  hum4 = dht22.getHumidity() *10; // air
     //uint16_t  co2 = co2Sensor.getCO2();   
     uint32_t  lum = lightSensor.getLux();
-    uint16_t  hum3 = sensor1.getHumidityLevel() *10;  // sol 10cm
+    uint16_t  hum3 = sensor1.getHumidityLevel() *10;  // sol 20cm
     int value = sensor1.getRawValue();
     Serial.println(value);
-    uint16_t  hum2 = sensor2.getHumidityLevel() *10; // sol 20cm
+    uint16_t  hum2 = sensor2.getHumidityLevel() *10; // sol 10cm
     value = sensor1.getRawValue();
     Serial.println(value);
     uint16_t  hum1 = sensor3.getHumidityLevel() *10; // sol 30cm
@@ -160,12 +160,12 @@ void loop() {
     Serial.print("🔵 Pression: "); Serial.print(pression); Serial.println(" Pa");
     Serial.print("🌡 Température Air: "); Serial.print(temp1); Serial.println(" °C");
     Serial.print("🌡 Température Sol: "); Serial.print(temp2); Serial.println(" °C");
-    Serial.print("💧 Humidité Air: "); Serial.print(hum1); Serial.println(" %");
+    Serial.print("💧 Humidité Air: "); Serial.print(hum4); Serial.println(" %");
     Serial.print("💨 CO2: "); Serial.print(co2); Serial.println(" ppm");
     Serial.print("☀️ LUX: "); Serial.print(lum); Serial.println(" lx");
-    Serial.print("💧 Humidité Sol 1: "); Serial.print(hum2); Serial.println("%");
-    Serial.print("💧 Humidité Sol 2: "); Serial.print(hum3); Serial.println("%");
-    Serial.print("💧 Humidité Sol 3: "); Serial.print(hum1); Serial.println("%");
+    Serial.print("💧 Humidité Sol 10cm: "); Serial.print(hum3); Serial.println("%");
+    Serial.print("💧 Humidité Sol 20cm: "); Serial.print(hum2); Serial.println("%");
+    Serial.print("💧 Humidité Sol 30cm: "); Serial.print(hum1); Serial.println("%");
     Serial.print("🔋 Batterie: "); Serial.print(batterie); Serial.println("%"); 
     Serial.println("----------------------");
 
